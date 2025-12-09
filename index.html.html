@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 提示詞互動選擇矩陣</title>
+    <style>
+        :root {
+            /* 基礎色調 */
+            --bg-page: #f4f6f8;
+            --bg-container: #ffffff;
+            --border-color: #e0e6ed;
+            --text-main: #424242;
+            --primary-accent: #7697a6;
+            --result-bg: #37474f;
+
+            /* 莫蘭迪色系 - 直列標題 (左側) */
+            --row-shape: #b08b78;   /* 陶土色 */
+            --row-color: #cc8e8e;   /* 乾燥玫瑰 */
+            --row-space: #8fa38f;   /* 鼠尾草綠 */
+            --row-texture: #7d94a6; /* 灰藍色 */
+
+            /* 漸層灰色階 - 橫列標題 (上方) */
+            --col-subject: #f0f0f0;
+            --col-style: #e0e0e0;
+            --col-scene: #d1d1d1;
+            --col-lighting: #bfbfbf;
+            --col-quality: #a6a6a6;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', 'Arial', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            margin: 0;
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: var(--bg-container);
+            padding: 40px;
+            box-shadow: 0 4px 20px rgba(92, 124, 138, 0.08);
+            border-radius: 8px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #5c7c8a;
+            font-weight: 500;
+            letter-spacing: 1px;
+        }
+
+        .instruction-box {
+            background-color: #f0f7fa;
+            border-left: 4px solid var(--primary-accent);
+            padding: 20px;
+            margin-bottom: 35px;
+            color: #555;
+            border-radius: 4px;
+        }
+
+        .instruction-box strong {
+            color: #5c7c8a;
+        }
+
+        .core-input-section {
+            margin-bottom: 30px;
+            background: #fafbfc;
+            padding: 25px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .core-input-section label {
+            display: block;
+            margin-bottom: 12px;
+            font-weight: 600;
+            color: #5c7c8a;
+        }
+
+        .core-input-section input {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+            color: var(--text-main);
+        }
+
+        .core-input-section input:focus {
+            outline: none;
+            border-color: var(--primary-accent);
+            box-shadow: 0 0 0 3px rgba(118, 151, 166, 0.1);
+        }
+
+        .matrix-container {
+            display: grid;
+            grid-template-columns: 130px repeat(5, 1fr);
+            gap: 2px;
+            background-color: var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .matrix-container > div {
+            background-color: #fff;
+            padding: 15px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+
+        /* 標題樣式 */
+        .header-cell {
+            flex-direction: column;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: var(--text-main);
+        }
+        
+        .header-subject { background-color: var(--col-subject) !important; }
+        .header-style   { background-color: var(--col-style) !important; }
+        .header-scene   { background-color: var(--col-scene) !important; }
+        .header-lighting{ background-color: var(--col-lighting) !important; }
+        .header-quality { background-color: var(--col-quality) !important; color: #fff !important; }
+        
+        .header-cell .eng-text {
+            font-size: 0.75em;
+            opacity: 0.7;
+            margin-top: 4px;
+            text-transform: uppercase;
+            font-weight: normal;
+        }
+        .header-quality .eng-text { color: rgba(255,255,255,0.8); opacity: 1; }
+
+        .row-label {
+            flex-direction: column;
+            font-weight: 600;
+            color: #fff;
+            writing-mode: horizontal-tb;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .row-label-shape   { background-color: var(--row-shape) !important; }
+        .row-label-color   { background-color: var(--row-color) !important; }
+        .row-label-space   { background-color: var(--row-space) !important; }
+        .row-label-texture { background-color: var(--row-texture) !important; }
+        
+        .row-label .eng-text {
+            color: rgba(255,255,255,0.8);
+            font-weight: normal;
+        }
+
+        .select-cell:hover {
+            background-color: #f8fbff;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px 8px;
+            border: 1px solid #e0e6ed;
+            border-radius: 4px;
+            font-size: 14px;
+            background-color: #fff;
+            cursor: pointer;
+            color: var(--text-main);
+            transition: border-color 0.2s;
+        }
+
+        select:hover {
+            border-color: var(--primary-accent);
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--primary-accent);
+            box-shadow: 0 0 0 2px rgba(118, 151, 166, 0.1);
+        }
+
+        .result-section {
+            margin-top: 40px;
+            background-color: var(--result-bg);
+            padding: 25px;
+            border-radius: 8px;
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(55, 71, 79, 0.2);
+        }
+
+        .result-title {
+            font-size: 1em;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 500;
+        }
+
+        #finalPrompt {
+            font-family: 'Courier New', monospace;
+            font-size: 1.1em;
+            line-height: 1.8;
+            color: #fff;
+            background-color: rgba(0,0,0,0.2);
+            padding: 20px;
+            border-radius: 6px;
+            min-height: 80px;
+            white-space: pre-wrap;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .copy-btn {
+            background-color: var(--primary-accent);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.2s;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+        .copy-btn:hover {
+            background-color: #8baab9;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: 20px; }
+            .matrix-container { display: block; background-color: transparent; box-shadow: none; }
+            .header-cell { display: none; }
+            .matrix-container > div { border-bottom: none; padding: 5px 0; }
+            .row-label {
+                width: 100%;
+                justify-content: flex-start;
+                padding: 12px 15px;
+                border-radius: 6px;
+                margin-top: 25px;
+                margin-bottom: 10px;
+                flex-direction: row;
+                gap: 10px;
+                font-size: 1.1em;
+            }
+            .select-cell { background-color: transparent; padding-left: 5px; padding-right: 5px; }
+            .mobile-label { display: block; font-size: 0.85em; color: var(--primary-accent); margin-bottom: 5px; font-weight: 600; }
+            select { border: 2px solid var(--border-color); padding: 12px; }
+        }
+        @media (min-width: 769px) {
+            .mobile-label { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>AI 提示詞互動選擇矩陣</h1>
+
+    <div class="instruction-box">
+        <strong>操作說明：</strong> 請先在心中想好一個核心主題（例如：一隻太空貓），然後在下方矩陣選單中，選擇您想要添加的細節修飾詞。下方的區塊會即時組合成您的專屬 Prompt。
+    </div>
+
+    <div class="core-input-section">
+        <label for="coreSubject">0. 核心主題 (必填)</label>
+        <input type="text" id="coreSubject" data-label="核心主題" placeholder="例如：一隻正在看書的太空貓 A space cat reading a book..." oninput="updatePrompt()">
+    </div>
+
+    <div class="matrix-container">
+        <div class="header-cell" style="background: #f8f8f8;"></div>
+        <div class="header-cell header-subject">主體<span class="eng-text">Subject</span></div>
+        <div class="header-cell header-style">風格<span class="eng-text">Style</span></div>
+        <div class="header-cell header-scene">場景<span class="eng-text">Scene</span></div>
+        <div class="header-cell header-lighting">光線<span class="eng-text">Lighting</span></div>
+        <div class="header-cell header-quality">畫質<span class="eng-text">Quality</span></div>
+
+        <div class="row-label row-label-shape">形狀<span class="eng-text">Shape</span></div>
+        
+        <div class="select-cell">
+            <span class="mobile-label">形狀 - 主體</span>
+            <select data-label="主體-形狀" onchange="updatePrompt()">
+                <option value="">-- 選擇 --</option>
+                <option value="完美的球體 Perfect Spheres">完美的球體 Perfect Spheres</option>
+                <option value="銳利的三角形 Sharp Triangles">銳利的三角形 Sharp Triangles</option>
+                <option value="流動的曲線 Flowing Curves">流動的曲線 Flowing Curves</option>
+                <option value="方塊體素風格 Blocky Voxel">方塊體素風格 Blocky Voxel</option>
+                <option value="螺旋結構 Spiral Structure">螺旋結構 Spiral Structure</option>
+            </select>
+        </div>
+        <div class="select-cell">
+            <span class="mobile-label">形狀 - 風格</span>
+            <select data-label="風格-形狀" onchange="updatePrompt()">
+                <option value="">-- 選擇 --</option>
+                <option value="立體派 Cubist">立體派 Cubist</option>
+                <option value="簡約線條 Minimalist Lines">簡約線條 Minimalist Lines</option>
+                <option value="流體藝術 Fluid Art">流體藝術 Fluid Art</option>
+                <option value="低多邊形 Low Poly">低多邊形 Low Poly</option>
+                <option value="構成主義 Constructivism">構成主義 Constructivism</option>
+            </select>
+        </div>
+        <div class="select-cell">
+            <span class="mobile-label">形狀 - 場景</span>
+            <select data-label="場景-形狀" onchange="updatePrompt()">
+                <option value="">-- 選擇 --</option>
+                <option value="放射狀構圖 Radial">放射狀構圖 Radial</option>
+                <option value="垂直線條 Vertical Lines">垂直線條 Vertical Lines</option>
+                <option value="網格結構 Grid System">網格結構 Grid System</option>
+                <option value="碎形幾何圖案 Fractal Patterns">碎形幾何圖案 Fractal Patterns</option>
+                <option value="萬花筒效果 Kaleidoscope">萬花筒效果 Kaleidoscope</option>
+            </select>
+        </div>
+        <div class="select-cell">
+            <span class="mobile-label">形狀 - 光線</span>
+            <select data-label="光線-形狀" onchange="updatePrompt()">
+                <option value="">-- 選擇 --</option>
+                <option value="銳利陰影 Sharp Shadows">銳利陰影 Sharp Shadows</option>
+                <option value="光暈邊緣 Halo Edge Light">光暈邊緣 Halo Edge Light</option>
+                <option value="均勻柔光 Even Soft Light">均勻柔光 Even Soft Light</option>
+                <option value="幾何光束 Geometric Light Beams">幾何光束 Geometric Light Beams</option>
+                <option value="剪影 Silhouette">剪影 Silhouette</option>
+            </select>
+        </div>
+        <div class="select-cell">
+            <span class="mobile-label">形狀 - 畫質</span>
+            <select data-label="畫質-形狀" onchange="updatePrompt()">
+                <option value="">-- 選擇 --</option>
+                <option value="稜角分明 Sharp-edged">稜角分明 Sharp-edged</option>
+                <option value="精確的幾何 Precise Geometry">精確的幾何 Precise Geometry</option>
+                <option value="平滑曲線 Smooth Curvature">平滑曲線 Smooth Curvature</option>
+                <option value="線框渲染 Wireframe Render">線框渲染 Wireframe Render</option>
+                <option value="體積輪廓 Volumetric Contours">體積輪廓 Volumetric Contours</option>
+            </select>
+        </div>
+
+        <div class="row-label row-label-color">色彩<span class="eng-text">Color</span></div>
+        
+        <div class="select-cell">
+            <span class="mobile-label">色彩 - 主體</span>
+            <select data-label="主體-色彩" onchange="updatePrompt()">
+                <option value="">-- 選擇 --</option>
+                <option value="金屬質感色 Metallic Hues">金屬質感色 Metallic Hues</option>
+                <option value="對比色強調 Contrasting Colors">對比色強調 Contrasting Colors</option>
+                <option value="螢光點綴 Fluorescent Accents">螢光點綴 Fluorescent Accents</option>
+                <option value="全息雷射彩 Iridescent">全息雷射彩 Iridescent</option>
+                <option value="漸層皮膚 Gradient Skin">漸層皮膚 Gradient Skin</option>
+            </select>
+        </div>
+        <div class="select-cell">
+            <span class="mobile-label">色彩 - 風格</span>
+            <select data-label="風格-色彩" onchange="updatePrompt()">
+                <option value="">-- 選擇 --</option>
+                <option value="單色調 Monochromatic">單色調 Monochromatic</option>
+                <option value="普普藝術 Pop Art Colors">普普藝術 Pop Art Colors</option>
+                <option value="復古濾鏡 Vintage Filter">復古濾鏡 Vintage Filter</option>
+                <option value="蒸汽波風格 Vaporwave">蒸汽波風格 Vaporwave</option>
+                <option value="水彩暈染 Watercolor Wash">水彩暈染 Watercolor Wash</option>
+            </select>
+        </div>
+        <div class="select-cell">
+            <span class="mobile-label">色彩 - 場景</span>
+            <select data-label="場景-色彩" onchange="updatePrompt()">
+                <option value="">-- 選擇 --</option>
+                <option value="霓虹色調 Neon Palette">霓虹色調 Neon Palette</option>
+                <option value="柔和粉彩色 Soft Pastel Colors">柔和粉彩色 Soft Pastel Colors</option>
+                <option value="鮮豔色塊 Vibrant Color Blocks">鮮豔色塊 Vibrant Color Blocks</option>
+                <option value="黑光 UV 效果 Blacklight">黑光 UV 效果 Blacklight</option>
+                <option value="懷舊棕褐色 Sepia Tone">懷舊棕褐色 Sepia Tone</option>
+            </select>
+        </div>
+        <div class="select-cell">
+            <span class="mobile-label">色彩 - 光線</span>
+            <select data-label="光線-色彩" onchange="updatePrompt()">
+                <option value="">-- 選擇 --</option>
+                <option value="暖色調 Warm Tones">暖色調 Warm Tones</option>
+                <option value="冷色調 Cool Tones">冷色調 Cool Tones</option>
+                <option value="互補色光 Complementary Light">互補色光 Complementary Light</option>
+                <option value="生物發光 Bioluminescence">生物發光 Bioluminescence</option>
+                <option value="紅藍分割光 Split Lighting">紅藍分割光 Split Lighting</option>
+            </select>
+        </div>
+        <div class="select-cell">
+            <span class="mobile-label">色彩 - 畫質</span>
+            <select data-label="畫質-色彩" onchange="updatePrompt()">
+                <option value="">-- 選擇 --</option>
+                <option value="高飽和 High Saturation">高飽和 High Saturation</option>
+                <option value="褪色效果 Faded Colors">褪色效果 Faded Colors</option>
+                <option value="RGB 偏移 RGB Shift">RGB 偏移 RGB Shift</option>
+                <option value="彩色藝文 Technicolor">彩色藝文 Technicolor</option>
+                <option value="電影調色 Color Grading">電影調色 Color Grading</option>
+            </select>
+        </div>
+
+        <div class="row-label row-label-space">空間<span class="eng-text">Space</span></div>
+        
+        <div class="select-cell">
+            <span class="mobile-label">空間 - 主體</span>
+            <select data-label="主體-空間" onchange="updatePrompt()">
+                <option value="">-- 選擇 --</option>
+                <option value="放大細節 Macro View">放大細節 Macro View</option>
+                <option value="微觀視角 Microscopic View">微觀視角 Microscopic View</option>
+                <option value="懸浮在空中 Hovering Mid-Air">懸浮在空中 Hovering Mid-Air</option>
+                <option value="巨大化 Giant Scale">巨大化 Giant Scale</option>
+                <option value="剖面圖 Cross-section">剖面圖 Cross-section</option>
+            </select>
+        </div>
+        <div class="select-cell">
+            <span class="mobile-label">空間 - 風格</span>
+            <select data-label="風格-空間" onchange="updatePrompt()">
+                <option value="">-- 選擇 --</option>
+                <option value="宏偉的 Grandiose Scale">宏偉的 Grandiose Scale</option>
+                <option value="負空間設計 Negative Space">負空間設計 Negative Space</option>
+                <option value="概念藝術 Conceptual Art">概念藝術 Conceptual Art</option>
+                <option value="等角視圖 Isometric View">等角視圖 Isometric View</option>
+                <option value="視覺錯覺 Optical Illusion">視覺錯覺 Optical Illusion</option>
+            </select>
+        </div>
+        <div class="select-cell">
+            <span class="mobile-label">空間 - 場景</span>
+            <select data-label="場景-空間" onchange="updatePrompt()">
+                <option value="">-- 選擇 --</option>
+                <option value="廣闊空間 Expansive Space">廣闊空間 Expansive Space</option>
+                <option value="壓縮的空間 Compressed Space">壓縮的空間 Compressed Space</option>
+                <option value="無限延伸 Infinite Expanse">無限延伸 Infinite Expanse</option>
+                <option value="隧道視覺 Tunnel Vision">隧道視覺 Tunnel Vision</option>
+                <option value="鏡像空間 Mirror Room">鏡像空間 Mirror Room</option>
+            </select>
+        </div>
+        <div class="select-cell">
+            <span class="mobile-label">空間 - 光線</span>
+            <select data-label="光線-空間" onchange="updatePrompt()">
+                <option value="">-- 選擇 --</option>
+                <option value="體積光 Volumetric Light">體積光 Volumetric Light</option>
+                <option value="淺景深 Shallow Depth of Field">淺景深 Shallow Depth of Field</option>
+                <option value="強烈透視 Strong Perspective">強烈透視 Strong Perspective</option>
+                <option value="大氣霧霾 Atmospheric Haze">大氣霧霾 Atmospheric Haze</option>
+                <option value="邊緣光 Rim Lighting">邊緣光 Rim Lighting</option>
+            </select>
+        </div>
+        <div class="select-cell">
+            <span class="mobile-label">空間 - 畫質</span>
+            <select data-label="畫質-空間" onchange="updatePrompt()">
+                <option value="">-- 選擇 --</option>
+                <option value="3D 渲染 3D Rendering">3D 渲染 3D Rendering</option>
+                <option value="全景圖 Panorama">全景圖 Panorama</option>
+                <option value="Cinemascope 寬銀幕">Cinemascope 寬銀幕</option>
+                <option value="魚眼鏡頭 Fisheye Lens">魚眼鏡頭 Fisheye Lens</option>
+                <option value="移軸攝影 Tilt-shift">移軸攝影 Tilt-shift</option>
+            </select>
+        </div>
+
+        <div class="row-label row-label-texture">質感<span class="eng-text">Texture</span></div>
+        
+        <div class="select-cell">
+            <span class="mobile-label">質感 - 主體</span>
+            <select data-label="主體-質感" onchange="updatePrompt()">
+                <option value="">-- 選擇 --</option>
+                <option value="粗糙的石頭 Rough Stone">粗糙的石頭 Rough Stone</option>
+                <option value="光滑的絲綢 Silky Smooth">光滑的絲綢 Silky Smooth</option>
+                <option value="玻璃或透明材質 Glass Material">玻璃或透明材質 Glass Material</option>
+                <option value="蓬鬆的毛皮 Fluffy Fur">蓬鬆的毛皮 Fluffy Fur</option>
+                <option value="生鏽的金屬 Rusty Metal">生鏽的金屬 Rusty Metal</option>
+            </select>
+        </div>
+        
+        <div class="select-cell">
+            <span class="mobile-label">質感 - 風格</span>
+            <select data-label="風格-質感" onchange="updatePrompt()">
+                <option value="">-- 選擇 --</option>
+                <option value="流體鍍鉻 Liquid Chrome">流體鍍鉻 Liquid Chrome</option>
+                <option value="黏土擬態 Claymorphism">黏土擬態 Claymorphism</option>
+                <option value="織物紋理 Fabric Texture">織物紋理 Fabric Texture</option>
+                <option value="玻璃擬態 Glassmorphism">玻璃擬態 Glassmorphism</option>
+                <option value="全息幻彩 Holographic / Iridescent">全息幻彩 Holographic / Iridescent</option>
+            </select>
+        </div>
+
+        <div class="select-cell">
+            <span class="mobile-label">質感 - 場景</span>
+            <select data-label="場景-質感" onchange="updatePrompt()">
+                <option value="">-- 選擇 --</option>
+                <option value="潮濕反光 Wet Reflection">潮濕反光 Wet Reflection</option>
+                <option value="風化的斑駁 Weathered Patina">風化的斑駁 Weathered Patina</option>
+                <option value="顆粒感的地面 Grainy Ground">顆粒感的地面 Grainy Ground</option>
+                <option value="長滿青苔的 Mossy Overgrown">長滿青苔的 Mossy Overgrown</option>
+                <option value="拋光大理石 Polished Marble">拋光大理石 Polished Marble</option>
+            </select>
+        </div>
+        <div class="select-cell">
+            <span class="mobile-label">質感 - 光線</span>
+            <select data-label="光線-質感" onchange="updatePrompt()">
+                <option value="">-- 選擇 --</option>
+                <option value="霧面柔光 Matte Soft Lighting">霧面柔光 Matte Soft Lighting</option>
+                <option value="高光反射 High Specular Reflection">高光反射 High Specular Reflection</option>
+                <option value="柔焦效果 Soft Focus Effect">柔焦效果 Soft Focus Effect</option>
+                <option value="水波紋光影 Caustics">水波紋光影 Caustics</option>
+                <option value="次表面散射 Subsurface Scattering">次表面散射 Subsurface Scattering</option>
+            </select>
+        </div>
+        <div class="select-cell">
+            <span class="mobile-label">質感 - 畫質</span>
+            <select data-label="畫質-質感" onchange="updatePrompt()">
+                <option value="">-- 選擇 --</option>
+                <option value="膠片顆粒 Film Grain">膠片顆粒 Film Grain</option>
+                <option value="超寫實紋理 Hyperrealistic Texture">超寫實紋理 Hyperrealistic Texture</option>
+                <option value="Octane 渲染 OctaneRender">Octane 渲染 OctaneRender</option>
+                <option value="光線追蹤 Ray Tracing">光線追蹤 Ray Tracing</option>
+                <option value="賽璐珞風格 Cel Shaded">賽璐珞風格 Cel Shaded</option>
+            </select>
+        </div>
+
+    </div>
+
+    <div class="result-section">
+        <div class="result-title">
+            <span>生成的 AI 提示詞 (Generated Prompt)</span>
+            <button class="copy-btn" onclick="copyPrompt()">複製 / COPY</button>
+        </div>
+        <div id="finalPrompt">等待輸入...</div>
+    </div>
+</div>
+
+<script>
+    function updatePrompt() {
+        const coreInput = document.getElementById('coreSubject');
+        const core = coreInput.value.trim();
+        const selects = document.querySelectorAll('select');
+        let selectedParts = [];
+
+        // 1. 處理核心主題 (如果有輸入)
+        if (core) {
+            // 使用 data-label 來顯示標籤
+            const label = coreInput.getAttribute('data-label');
+            selectedParts.push(`[${label}]: ${core}`);
+        }
+
+        // 2. 處理所有下拉選單
+        selects.forEach(select => {
+            if (select.value) {
+                const label = select.getAttribute('data-label');
+                selectedParts.push(`[${label}]: ${select.value}`);
+            }
+        });
+
+        // 3. 組合並顯示結果
+        const resultDiv = document.getElementById('finalPrompt');
+        if (selectedParts.length > 0) {
+            resultDiv.innerText = selectedParts.join(', ');
+            resultDiv.style.color = "#fff";
+        } else {
+            resultDiv.innerText = "等待輸入...";
+            resultDiv.style.color = "rgba(255,255,255,0.5)";
+        }
+    }
+
+    function copyPrompt() {
+        const text = document.getElementById('finalPrompt').innerText;
+        if (text === "等待輸入...") return;
+        navigator.clipboard.writeText(text).then(() => {
+            const btn = document.querySelector('.copy-btn');
+            const originalText = btn.innerText;
+            btn.innerText = "已複製 / COPIED";
+            btn.style.backgroundColor = "#4caf50";
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.style.backgroundColor = "";
+            }, 2000);
+        });
+    }
+</script>
+
+</body>
+</html>
